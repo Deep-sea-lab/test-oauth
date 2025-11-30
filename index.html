@@ -470,6 +470,25 @@
         
         if (result.success) {
           console.log(`[OAuth-Between] Token sent to cloud successfully`);
+          
+          // 临时缓解方案：收到 retrieveUrl 后立即访问它，确保在同一实例内快速获取 token
+          // 这样避免跨实例时内存数据丢失的问题
+          if (result.retrieveUrl) {
+            console.log(`[OAuth-Between] Attempting immediate token retrieval from: ${result.retrieveUrl}`);
+            try {
+              const retrieveResponse = await fetch(result.retrieveUrl);
+              if (retrieveResponse.ok) {
+                const retrieveData = await retrieveResponse.json();
+                if (retrieveData.success && retrieveData.token) {
+                  console.log(`[OAuth-Between] Token verified via retrieveUrl`);
+                }
+              } else {
+                console.warn(`[OAuth-Between] Failed to verify token via retrieveUrl: ${retrieveResponse.status}`);
+              }
+            } catch (retrieveError) {
+              console.warn(`[OAuth-Between] Error during immediate token retrieval:`, retrieveError.message);
+            }
+          }
         } else {
           console.error(`[OAuth-Between] Failed to send token:`, result.error);
         }
