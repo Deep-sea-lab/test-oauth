@@ -5,6 +5,10 @@
 [build.environment]
   NODE_VERSION = "18"
 
+# 使用 Netlify 插件自动安装 Functions 中的依赖
+[[plugins]]
+  package = "@netlify/plugin-functions-install-core"
+
 # 存储token到Supabase的路由
 [[redirects]]
   from = "/store-token"
