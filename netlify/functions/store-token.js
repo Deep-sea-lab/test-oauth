@@ -31,7 +31,7 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // 初始化全局存储
+    // 初始化全局存储（临时缓解方案）
     if (!global.tempTokens) {
       global.tempTokens = new Map();
     }
@@ -39,12 +39,14 @@ exports.handler = async (event, context) => {
     // 存储token数据
     const tokenData = {
       token: token,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      // 给客户端一个立即可用的取回 URL，无需再依赖内存查询
+      retrieveUrl: `/.netlify/functions/temp-token/${hash}`
     };
     
     global.tempTokens.set(hash, tokenData);
 
-    console.log(`存储token: hash=${hash.substring(0, 10)}...`);
+    console.log(`[Store-Token] Stored token: hash=${hash.substring(0, 10)}... retrieveUrl=${tokenData.retrieveUrl}`);
 
     return {
       statusCode: 200,
@@ -55,12 +57,14 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({
         success: true,
         message: 'Token已存储',
-        hash: hash
+        hash: hash,
+        // 返回立即可用的取回URL，客户端应该直接访问此URL而不是等待后续轮询
+        retrieveUrl: tokenData.retrieveUrl
       })
     };
 
   } catch (error) {
-    console.error('存储token失败:', error);
+    console.error('[Store-Token] 存储token失败:', error);
     
     return {
       statusCode: 500,
