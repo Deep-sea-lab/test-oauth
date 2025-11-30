@@ -1,3 +1,15 @@
+const { createClient } = require('@supabase/supabase-js');
+
+// 初始化 Supabase 客户端
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('[Store-Token] Missing Supabase credentials in environment variables');
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
+
 exports.handler = async (event, context) => {
   // 处理CORS预检请求
   if (event.httpMethod === 'OPTIONS') {
@@ -31,22 +43,30 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // 初始化全局存储（临时缓解方案）
-    if (!global.tempTokens) {
-      global.tempTokens = new Map();
+    // 将 token 存储到 Supabase
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 分钟过期
+    
+    const { data, error } = await supabase
+      .from('oauth_tokens')
+      .upsert({
+        hash: hash,
+        token: token,
+        created_at: new Date().toISOString(),
+        expires_at: expiresAt.toISOString()
+      }, {
+        onConflict: 'hash'
+      });
+
+    if (error) {
+      console.error('[Store-Token] Supabase error:', error);
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: '存储失败', message: error.message }),
+        headers: { 'Access-Control-Allow-Origin': '*' }
+      };
     }
 
-    // 存储token数据
-    const tokenData = {
-      token: token,
-      timestamp: Date.now(),
-      // 给客户端一个立即可用的取回 URL，无需再依赖内存查询
-      retrieveUrl: `/.netlify/functions/temp-token/${hash}`
-    };
-    
-    global.tempTokens.set(hash, tokenData);
-
-    console.log(`[Store-Token] Stored token: hash=${hash.substring(0, 10)}... retrieveUrl=${tokenData.retrieveUrl}`);
+    console.log(`[Store-Token] Stored token to Supabase: hash=${hash.substring(0, 10)}... expires at ${expiresAt.toISOString()}`);
 
     return {
       statusCode: 200,
@@ -56,10 +76,8 @@ exports.handler = async (event, context) => {
       },
       body: JSON.stringify({
         success: true,
-        message: 'Token已存储',
-        hash: hash,
-        // 返回立即可用的取回URL，客户端应该直接访问此URL而不是等待后续轮询
-        retrieveUrl: tokenData.retrieveUrl
+        message: 'Token已存储到Supabase',
+        hash: hash
       })
     };
 

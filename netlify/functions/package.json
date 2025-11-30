@@ -1,0 +1,12 @@
+{
+  "name": "oauth-between-functions",
+  "version": "1.0.0",
+  "description": "Netlify Functions for OAuth-Between with Supabase storage",
+  "main": "index.js",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.0"
+  },
+  "engines": {
+    "node": "18.x"
+  }
+}

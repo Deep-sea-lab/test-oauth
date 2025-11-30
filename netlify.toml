@@ -1,8 +1,9 @@
 [build]
   publish = "."
   functions = "netlify/functions"
+  environment = { NODE_VERSION = "18.x" }
 
-# 存储token的路由
+# 存储token到Supabase的路由
 [[redirects]]
   from = "/store-token"
   to = "/.netlify/functions/store-token"
