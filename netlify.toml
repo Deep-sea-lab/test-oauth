@@ -1,7 +1,9 @@
 [build]
   publish = "."
   functions = "netlify/functions"
-  environment = { NODE_VERSION = "18.x" }
+
+[build.environment]
+  NODE_VERSION = "18"
 
 # 存储token到Supabase的路由
 [[redirects]]
