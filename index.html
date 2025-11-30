@@ -441,27 +441,6 @@
         }, 1500);
       }
     }
-        
-        // 向云端API发送token用于临时路由访问
-        await sendTokenToCloud(oauthHash, token);
-        
-        // 稍后关闭窗口
-        setTimeout(() => {
-          window.close();
-        }, 1500);
-      } catch (error) {
-        console.error('[OAuth-Between] Error processing token:', error);
-        
-        // 备用方案：使用简单的时间戳
-        const backupKey = `oauth_token_backup_${oauthHash}`;
-        localStorage.setItem(backupKey, token);
-        console.log('[OAuth-Between] Used backup key:', backupKey);
-        
-        setTimeout(() => {
-          window.close();
-        }, 1500);
-      }
-    }
 
     // 向云端发送token用于临时路由
     async function sendTokenToCloud(hash, token) {
