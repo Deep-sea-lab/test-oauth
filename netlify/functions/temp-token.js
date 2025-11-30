@@ -1,14 +1,11 @@
 const { createClient } = require('@supabase/supabase-js');
 
-// 初始化 Supabase 客户端
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  console.error('[Temp-Token] Missing Supabase credentials in environment variables');
+function getSupabaseClient() {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseKey) return null;
+  return createClient(supabaseUrl, supabaseKey);
 }
-
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 exports.handler = async (event, context) => {
   // 处理CORS预检请求
@@ -52,6 +49,16 @@ exports.handler = async (event, context) => {
   const requestedHash = hashMatch[1];
   
   try {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[Temp-Token] Missing SUPABASE_URL or SUPABASE_ANON_KEY');
+      return {
+        statusCode: 500,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ success: false, error: 'Supabase credentials not configured' })
+      };
+    }
+
     // 从 Supabase 查询 token
     const { data, error } = await supabase
       .from('oauth_tokens')

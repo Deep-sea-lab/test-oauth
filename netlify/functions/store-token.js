@@ -1,14 +1,11 @@
 const { createClient } = require('@supabase/supabase-js');
 
-// 初始化 Supabase 客户端
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  console.error('[Store-Token] Missing Supabase credentials in environment variables');
+function getSupabaseClient() {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseKey) return null;
+  return createClient(supabaseUrl, supabaseKey);
 }
-
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 exports.handler = async (event, context) => {
   // 处理CORS预检请求
@@ -34,6 +31,16 @@ exports.handler = async (event, context) => {
   }
 
   try {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[Store-Token] Missing SUPABASE_URL or SUPABASE_ANON_KEY');
+      return {
+        statusCode: 500,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Supabase credentials not configured' })
+      };
+    }
+
     const { hash, token } = JSON.parse(event.body);
     
     if (!hash || !token) {
@@ -53,9 +60,7 @@ exports.handler = async (event, context) => {
         token: token,
         created_at: new Date().toISOString(),
         expires_at: expiresAt.toISOString()
-      }, {
-        onConflict: 'hash'
-      });
+      }, { onConflict: 'hash' });
 
     if (error) {
       console.error('[Store-Token] Supabase error:', error);
